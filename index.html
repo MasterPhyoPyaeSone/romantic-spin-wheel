@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Romantic Spin Wheel 💖</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Poppins:wght@400;600&display=swap');
+
+        :root {
+            --primary-pink: #ff85a2;
+            --soft-pink: #ffc1e3;
+            --deep-pink: #ff4d6d;
+            --white-glass: rgba(255, 255, 255, 0.85);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #ffdee9 0%, #b5fffc 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 480px;
+            width: 90%;
+            z-index: 10;
+        }
+
+        .main-card {
+            background: var(--white-glass);
+            backdrop-filter: blur(20px);
+            border-radius: 40px;
+            padding: 40px 25px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(255, 133, 162, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            position: relative;
+        }
+
+        h1 {
+            font-family: 'Dancing Script', cursive;
+            font-size: 38px;
+            color: var(--deep-pink);
+            margin-bottom: 10px;
+        }
+
+        /* 🎡 Upgraded Spin Wheel Design */
+        .wheel-outer-ring {
+            position: relative;
+            width: 340px;
+            height: 340px;
+            margin: 30px auto;
+            border: 12px solid white;
+            border-radius: 50%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pointer-tab {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            width: 40px;
+            height: 50px;
+            background: var(--deep-pink);
+            clip-path: polygon(50% 100%, 0 0, 100% 0);
+            border-radius: 5px;
+        }
+
+        .center-hub {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            z-index: 50;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid var(--soft-pink);
+        }
+
+        canvas {
+            border-radius: 50%;
+            transition: transform 5s cubic-bezier(0.15, 0, 0.1, 1);
+        }
+
+        /* Selection Styling */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin: 25px 0;
+        }
+
+        .opt-btn {
+            background: white;
+            border: none;
+            padding: 15px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #555;
+            transition: 0.3s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .opt-btn.selected {
+            background: var(--primary-pink);
+            color: white;
+            transform: scale(1.03);
+            box-shadow: 0 8px 20px rgba(255, 133, 162, 0.4);
+        }
+
+        .btn-action {
+            background: linear-gradient(45deg, var(--deep-pink), var(--primary-pink));
+            color: white;
+            border: none;
+            padding: 16px 50px;
+            border-radius: 40px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(255, 77, 109, 0.4);
+            transition: 0.3s;
+        }
+
+        .btn-action:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; }
+
+        .hidden { display: none; }
+
+        .res-tag {
+            background: white;
+            padding: 12px 20px;
+            border-radius: 20px;
+            margin: 5px;
+            display: inline-block;
+            color: var(--deep-pink);
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        .heart-bg {
+            position: fixed;
+            top: -10%;
+            font-size: 20px;
+            color: var(--primary-pink);
+            opacity: 0.3;
+            pointer-events: none;
+            animation: fall linear infinite;
+            z-index: 0;
+        }
+        @keyframes fall { to { transform: translateY(110vh) rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="heart-layer"></div>
+
+    <div class="container">
+        <div id="select-screen" class="main-card">
+            <h1>Activity Picks 🎀</h1>
+            <p style="color: #888;">Pick 5 things for our special time!</p>
+            <div id="grid" class="options-grid"></div>
+            <button id="next-btn" class="btn-action" disabled>Next Step ✨</button>
+        </div>
+
+        <div id="wheel-screen" class="main-card hidden">
+            <h1>Spin the Love 🎡</h1>
+            <div class="wheel-outer-ring">
+                <div class="pointer-tab"></div>
+                <div class="center-hub">💖</div>
+                <canvas id="wheel" width="600" height="600" style="width: 316px; height: 316px;"></canvas>
+            </div>
+            <button id="spin-btn" class="btn-action">SPIN 💘</button>
+            <p id="count-text" style="margin-top:20px; font-weight:bold; color:#777;">Attempts: 3 Left</p>
+        </div>
+
+        <div id="final-screen" class="main-card hidden">
+            <h1>Our Result 🌸</h1>
+            <div id="final-results" style="margin: 20px 0;"></div>
+            <p style="font-size: 16px; font-style: italic; color: #666;">"Can't wait to do these with you!"</p>
+            <button onclick="location.reload()" class="btn-action" style="margin-top:20px;">Restart</button>
+        </div>
+
+        <div id="log" style="text-align:center; margin-top:10px;"></div>
+    </div>
+
+    <script>
+        // Updated Activity List
+        const activities = [
+            "🍦 Ice Cream",
+            "🛍 Shopping",
+            "🎁 Surprise",
+            "🍜 Favorite Food",
+            "😘 10 Kisses",
+            "🤗 Long Hug",
+            "🎤 Sing a Song",
+            "🍫 Chocolate",
+            "💃 Dance 30s"
+        ];
+        
+        let picked = [];
+        let spins = 3;
+        let rot = 0;
+        const won = [];
+
+        // Background Animation
+        setInterval(() => {
+            const h = document.createElement('div');
+            h.className = 'heart-bg';
+            h.innerHTML = '❤';
+            h.style.left = Math.random() * 100 + 'vw';
+            h.style.animationDuration = (Math.random() * 3 + 5) + 's';
+            document.getElementById('heart-layer').appendChild(h);
+            setTimeout(() => h.remove(), 8000);
+        }, 700);
+
+        // Grid Logic
+        const grid = document.getElementById('grid');
+        activities.forEach(a => {
+            const b = document.createElement('button');
+            b.className = 'opt-btn';
+            b.innerText = a;
+            b.onclick = () => {
+                if(picked.includes(a)) {
+                    picked = picked.filter(x => x !== a);
+                    b.classList.remove('selected');
+                } else if(picked.length < 5) {
+                    picked.push(a);
+                    b.classList.add('selected');
+                }
+                document.getElementById('next-btn').disabled = picked.length !== 5;
+            };
+            grid.appendChild(b);
+        });
+
+        document.getElementById('next-btn').onclick = () => {
+            document.getElementById('select-screen').classList.add('hidden');
+            document.getElementById('wheel-screen').classList.remove('hidden');
+            draw();
+        };
+
+        const canvas = document.getElementById('wheel');
+        const ctx = canvas.getContext('2d');
+
+        function draw() {
+            const n = picked.length;
+            const slice = (Math.PI * 2) / n;
+            ctx.clearRect(0,0,600,600);
+
+            picked.forEach((text, i) => {
+                const angle = i * slice;
+                ctx.beginPath();
+                ctx.fillStyle = i % 2 === 0 ? '#ff85a2' : '#ffb6c1';
+                ctx.moveTo(300, 300);
+                ctx.arc(300, 300, 300, angle, angle + slice);
+                ctx.fill();
+                ctx.strokeStyle = "rgba(255,255,255,0.5)";
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.save();
+                ctx.translate(300, 300);
+                ctx.rotate(angle + slice / 2);
+                ctx.fillStyle = "white";
+                // Adjusted Font Size for longer text
+                ctx.font = "bold 26px Poppins";
+                ctx.textAlign = "right";
+                // Clean emoji if text is long
+                const displayLabel = text.length > 12 ? text.substring(0, 10) + ".." : text;
+                ctx.fillText(displayLabel, 270, 10);
+                ctx.restore();
+            });
+        }
+
+        document.getElementById('spin-btn').onclick = function() {
+            if (spins <= 0) return;
+            this.disabled = true;
+
+            const extra = Math.floor(Math.random() * 360) + 1800;
+            rot += extra;
+            canvas.style.transform = `rotate(${rot}deg)`;
+
+            setTimeout(() => {
+                const actualRot = rot % 360;
+                const sliceDeg = 360 / picked.length;
+                const winIdx = Math.floor(((360 - (actualRot % 360) + 270) % 360) / sliceDeg);
+                const winner = picked[winIdx];
+
+                won.push(winner);
+                document.getElementById('log').innerHTML += `<div class="res-tag">💖 ${winner}</div>`;
+
+                picked.splice(winIdx, 1);
+                spins--;
+                document.getElementById('count-text').innerText = `Attempts: ${spins} Left`;
+
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+
+                if (spins > 0) {
+                    this.disabled = false;
+                    draw();
+                } else {
+                    setTimeout(() => {
+                        document.getElementById('wheel-screen').classList.add('hidden');
+                        document.getElementById('log').classList.add('hidden');
+                        document.getElementById('final-screen').classList.remove('hidden');
+                        won.forEach(w => document.getElementById('final-results').innerHTML += `<div class="res-tag" style="display:block; width:fit-content; margin:10px auto;">${w}</div>`);
+                    }, 1500);
+                }
+            }, 5000);
+        };
+    </script>
+</body>
+</html>
